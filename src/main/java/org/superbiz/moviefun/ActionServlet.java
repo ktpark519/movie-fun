@@ -19,6 +19,7 @@ package org.superbiz.moviefun;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.superbiz.moviefun.movies.Movie;
 import org.superbiz.moviefun.movies.MoviesBean;
 
@@ -40,7 +41,13 @@ public class ActionServlet extends HttpServlet {
     public static int PAGE_SIZE = 5;
 
     @Autowired
-    private MoviesBean moviesBean;
+    private final MoviesBean moviesBean;
+    private final PlatformTransactionManager moviesTransactionManager;
+
+    public ActionServlet(MoviesBean moviesBean, PlatformTransactionManager moviesTransactionManager) {
+        this.moviesBean = moviesBean;
+        this.moviesTransactionManager = moviesTransactionManager;
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
