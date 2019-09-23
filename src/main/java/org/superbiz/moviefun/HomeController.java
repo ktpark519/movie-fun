@@ -36,11 +36,9 @@ public class HomeController {
         for (Movie movie : movieFixtures.load()) {
             moviesBean.addMovie(movie);
         }
-
         for (Album album : albumFixtures.load()) {
             albumsBean.addAlbum(album);
         }
-
         model.put("movies", moviesBean.getMovies());
         model.put("albums", albumsBean.getAlbums());
 
