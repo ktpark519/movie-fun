@@ -5,6 +5,7 @@ import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.superbiz.moviefun.blobstore.Blob;
 import org.superbiz.moviefun.blobstore.BlobStore;
@@ -24,6 +25,8 @@ public class AlbumsUpdater {
     private final ObjectReader objectReader;
     private final BlobStore blobStore;
     private final AlbumsBean albumsBean;
+    private AlbumsUpdater albumsUpdater;
+    private JdbcTemplate jdbcTemplate;
 
     public AlbumsUpdater(BlobStore blobStore, AlbumsBean albumsBean) {
         this.blobStore = blobStore;
@@ -45,6 +48,15 @@ public class AlbumsUpdater {
         if (!maybeBlob.isPresent()) {
             logger.info("No albums.csv found when running AlbumsUpdater!");
             return;
+        }
+
+        if (startAlbumSchedulerTask()) {
+            logger.debug("Starting albums update");
+            albumsUpdater.update();
+            logger.debug("Finished albums update");
+
+        } else {
+            logger.debug("Nothing to start");
         }
 
         List<Album> albumsToHave = readFromCsv(objectReader, maybeBlob.get().inputStream);
@@ -85,5 +97,16 @@ public class AlbumsUpdater {
         Optional<Album> maybeExisting = existingAlbums.stream().filter(album::isEquivalent).findFirst();
         maybeExisting.ifPresent(existing -> album.setId(existing.getId()));
         return album;
+    }
+
+    private boolean startAlbumSchedulerTask() {
+        int updatedRows = jdbcTemplate.update(
+                "UPDATE album_scheduler_task" +
+                        " SET started_at = now()" +
+                        " WHERE started_at IS NULL" +
+                        " OR started_at < date_sub(now(), INTERVAL 2 MINUTE)"
+        );
+
+        return updatedRows > 0;
     }
 }
